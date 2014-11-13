@@ -113,7 +113,7 @@ namespace Expresso
             {
                 u = 2 * rnduniformr() - 1;
                 v = 2 * rnduniformr() - 1;
-                s = (u*u) + (v*v);
+                s = (u * u) + (v * v);
                 if (s > 0 & s < 1)
                 {
                     s = Math.Sqrt(-(2 * Math.Log(s) / s));
@@ -186,14 +186,17 @@ namespace Expresso
 
     }
 
-    enum TokenType { Empty, Id, LeftBracket, RightBracket, Number, AssignOp, AddOp, SubOp, MulOp, DivOp, ModOp,
-                     UnaryMinus, PowOp, AndOp, OrOp, NotOp, Colon }
+    enum TokenType
+    {
+        Empty, Id, LeftBracket, RightBracket, Number, AssignOp, AddOp, SubOp, MulOp, DivOp, ModOp,
+        UnaryMinus, PowOp, AndOp, OrOp, NotOp, Colon
+    }
 
     struct Token
     {
         public TokenType Type;
         public double Value;
-        public uint qc; 
+        public uint qc;
         public string Lexeme;
     }
 
@@ -212,7 +215,7 @@ namespace Expresso
         public LexAnalyzer()
         {
             System.Globalization.CultureInfo ci = System.Globalization.CultureInfo.InstalledUICulture;
-            
+
             ni = (System.Globalization.NumberFormatInfo)ci.NumberFormat.Clone();
             ni.NumberDecimalSeparator = ".";
 
@@ -271,7 +274,7 @@ namespace Expresso
                     return TokenType.Id;
                     break;
 
-                case 2: 
+                case 2:
                     return TokenType.Number;
                     break;
 
@@ -322,7 +325,7 @@ namespace Expresso
         private void SkipWhitespace()
         {
             if (!IsEnd())
-                while(IsWhite(_Text[i2]))
+                while (IsWhite(_Text[i2]))
                 {
                     i2++;
                     if (IsEnd())
@@ -340,7 +343,7 @@ namespace Expresso
 
         public TokenType NextToken(int n)
         {
-            return ((Token)(BufToken[CurTok+n-1])).Type;
+            return ((Token)(BufToken[CurTok + n - 1])).Type;
         }
 
         public void FillBuffer()
@@ -350,7 +353,7 @@ namespace Expresso
             {
                 t = MatchToken();
                 BufToken.Add(t);
-            }while (t.Type != TokenType.Empty);
+            } while (t.Type != TokenType.Empty);
         }
 
         public Token GetToken()
@@ -363,7 +366,7 @@ namespace Expresso
             {
                 return (Token)BufToken[BufToken.Count - 1];
             }
-                 
+
         }
 
         public Token MatchToken()
@@ -377,13 +380,13 @@ namespace Expresso
             }
 
             SkipWhitespace();
-            if(IsEnd())
+            if (IsEnd())
             {
                 t.Type = TokenType.Empty;
                 return t;
             }
 
-            switch ( t.Type = GetTokenType( _Text[i1] ) )
+            switch (t.Type = GetTokenType(_Text[i1]))
             {
                 case TokenType.Id:
                     while (IsAlpha(_Text[i2]) || IsDigit(_Text[i2]))
@@ -433,13 +436,13 @@ namespace Expresso
                 case TokenType.NotOp:
                 case TokenType.Colon:
 
-                //
+                    //
                     break;
 
                 default:
                     t.Lexeme = "Error token!";
                     t.Type = TokenType.Empty;
-                    
+
                     break;
 
             }
@@ -515,7 +518,7 @@ namespace Expresso
 
         public void Add(Token t)
         {
-            if(!Exist(t.Lexeme))
+            if (!Exist(t.Lexeme))
                 VarTab.Add(t.Lexeme, t);
         }
 
@@ -579,7 +582,7 @@ namespace Expresso
                 Token t = (Token)s.Pop();
                 Result.AppendFormat("{0}", t.Lexeme);
             }
-            
+
             return Result.ToString();
         }
     }
@@ -596,7 +599,7 @@ namespace Expresso
     {
         private ArrayList Code = new ArrayList();
         private ArrayList MainCode = new ArrayList();
-        
+
         public VarTable VarTab;
 
         public CodeProcessor()
@@ -612,7 +615,7 @@ namespace Expresso
             MainCode = new ArrayList(Code);
         }
 
-         public void Clear()
+        public void Clear()
         {
             Code.Clear();
             MainCode.Clear();
@@ -665,8 +668,8 @@ namespace Expresso
                 while (true)
                 {
                     if (Size() == 1 || i >= Size())
-                        break;;
-                    switch(ttype = Get(i).Type)
+                        break; ;
+                    switch (ttype = Get(i).Type)
                     {
                         case TokenType.AddOp:
                         case TokenType.SubOp:
@@ -693,11 +696,11 @@ namespace Expresso
                                 case TokenType.DivOp:
                                     try
                                     {
-                                        t2.Value = t2.Value / t1.Value; 
+                                        t2.Value = t2.Value / t1.Value;
                                     }
                                     catch (DivideByZeroException e)
                                     {
-                                        
+
                                     }
                                     break;
                                 case TokenType.ModOp: t2.Value = t2.Value % t1.Value; break;
@@ -741,7 +744,7 @@ namespace Expresso
                 return r;
             }
             else
-                return -1; 
+                return -1;
         }
     }
 
@@ -753,12 +756,12 @@ namespace Expresso
 
         public SynAnalyzer()
         {
-            
+
         }
-        
+
         public SynAnalyzer(LexAnalyzer L, CodeProcessor C)
         {
-            
+
             Lex = L;
             Code = C;
         }
@@ -874,40 +877,38 @@ namespace Expresso
         {
             Token t;
 
-                switch (Lex.NextToken())
-                {
-                    case TokenType.LeftBracket:
-                        Lex.GetToken(); // '('
-                        Expr();
-                        Lex.GetToken(); // ')'
-                        FactorRounded();
-                        break;
-                    case TokenType.SubOp:
-                        t = Lex.GetToken();
-                        t.Type = TokenType.UnaryMinus;
-                        Factor();
-                        Code.Push(t);
-                        break;
-                    case TokenType.NotOp:
-                        t = Lex.GetToken();
-                        t.Type = TokenType.NotOp;
-                        Factor();
-                        Code.Push(t);
-                        break;
-                    case TokenType.Id:
-                    case TokenType.Number:
-                        t = Lex.GetToken();
-                        Code.Push(t);
-                        FactorRounded();
-                        break;
-                    case TokenType.Empty:
-                        // пустой токен, значит конец потока символов
-                        break;
-                    default:
-                        Compiled = false;
-                        //Console.WriteLine("!");
-                        break;
-                }
+            switch (Lex.NextToken())
+            {
+                case TokenType.LeftBracket:
+                    Lex.GetToken(); // '('
+                    Expr();
+                    Lex.GetToken(); // ')'
+                    FactorRounded();
+                    break;
+                case TokenType.SubOp:
+                    t = Lex.GetToken();
+                    t.Type = TokenType.UnaryMinus;
+                    Factor();
+                    Code.Push(t);
+                    break;
+                case TokenType.NotOp:
+                    t = Lex.GetToken();
+                    t.Type = TokenType.NotOp;
+                    Factor();
+                    Code.Push(t);
+                    break;
+                case TokenType.Id:
+                case TokenType.Number:
+                    t = Lex.GetToken();
+                    Code.Push(t);
+                    FactorRounded();
+                    break;
+                case TokenType.Empty:
+                    break;
+                default:
+                    Compiled = false;
+                    break;
+            }
         }
     }
 
@@ -1017,8 +1018,6 @@ namespace Expresso
             }
         }
     }
-    //--------------------------------------------
-
     class TTT
     {
         public void t()
@@ -1098,7 +1097,6 @@ namespace Expresso
             VarTab.Print();
         }
     }
-
 
     class Program
     {
@@ -1181,7 +1179,7 @@ namespace Expresso
                 {
                     Write("# ", ConsoleColor.Green);
                     e.Expression = Console.ReadLine();
-                    if (string.IsNullOrEmpty(e.Expression)) 
+                    if (string.IsNullOrEmpty(e.Expression))
                         continue;
                 }
                 if (e.Expression[0] == '@')
@@ -1190,7 +1188,7 @@ namespace Expresso
                     {
                         expr_file = File.OpenText(e.Expression.Substring(1));
                         e.Expression = "open";
-                        
+
                     }
                     else
                         WriteLine("File not found!");
@@ -1215,10 +1213,10 @@ namespace Expresso
                         break;
                     case "open":
                         batch_mode = true;
-                        if(!expr_file.EndOfStream)
+                        if (!expr_file.EndOfStream)
                         {
                             e.Expression = expr_file.ReadLine();
-                            goto default;     
+                            goto default;
                         }
                         else
                         {
@@ -1257,7 +1255,7 @@ namespace Expresso
                         {
                             if (!e.Parse())
                                 throw new Exception();
-                                
+
                             if (batch_mode)
                             {
                                 if (!exp)
@@ -1277,8 +1275,8 @@ namespace Expresso
                         {
                             WriteLine("Syntax error!", ConsoleColor.Red);
                         }
-                        myTimer.Stop();   
-                        
+                        myTimer.Stop();
+
                         Console.ForegroundColor = ConsoleColor.White;
 
                         result = myTimer.Duration(1);
