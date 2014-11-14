@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -207,8 +206,8 @@ namespace Expresso
         private int i1 = 0, i2 = 0;
 
         private const int BufSize = 20;
-        private ArrayList BufToken = new ArrayList(BufSize);
-        private int CurTok = 0;
+        private readonly ArrayList _bufToken = new ArrayList(BufSize);
+        private int _curTok = 0;
 
         static System.Globalization.NumberFormatInfo ni = null;
 
@@ -243,16 +242,16 @@ namespace Expresso
                 {
                     _Text = value;
                     i1 = i2 = 0;
-                    BufToken.Clear();
+                    _bufToken.Clear();
                     FillBuffer();
                 }
-                CurTok = 0;
+                _curTok = 0;
             }
         }
 
         public void Start()
         {
-            CurTok = 0;
+            _curTok = 0;
         }
 
         private void ShiftIterators(ref int iter1, ref int iter2)
@@ -260,13 +259,13 @@ namespace Expresso
             iter1 = ++iter2;
         }
 
-        private TokenType GetTokenType(char FirstCharOfToken)
+        private TokenType GetTokenType(char firstCharOfToken)
         {
             int State = -1;
 
-            if (IsAlpha(FirstCharOfToken)) State = 1;
-            if (IsDigit(FirstCharOfToken)) State = 2;
-            if (IsDelim(FirstCharOfToken)) State = 3;
+            if (IsAlpha(firstCharOfToken)) State = 1;
+            if (IsDigit(firstCharOfToken)) State = 2;
+            if (IsDelim(firstCharOfToken)) State = 3;
 
             switch (State)
             {
@@ -279,7 +278,7 @@ namespace Expresso
                     break;
 
                 case 3:
-                    switch (FirstCharOfToken)
+                    switch (firstCharOfToken)
                     {
                         case '+':
                             return TokenType.AddOp;
@@ -336,14 +335,9 @@ namespace Expresso
             ShiftIterators(ref i1, ref i2);
         }
 
-        public TokenType NextToken()
+        public TokenType NextToken(int n = 1)
         {
-            return NextToken(1);
-        }
-
-        public TokenType NextToken(int n)
-        {
-            return ((Token)(BufToken[CurTok + n - 1])).Type;
+            return ((Token)(_bufToken[_curTok + n - 1])).Type;
         }
 
         public void FillBuffer()
@@ -352,26 +346,26 @@ namespace Expresso
             do
             {
                 t = MatchToken();
-                BufToken.Add(t);
+                _bufToken.Add(t);
             } while (t.Type != TokenType.Empty);
         }
 
         public Token GetToken()
         {
-            if (CurTok < BufToken.Count)
+            if (_curTok < _bufToken.Count)
             {
-                return (Token)BufToken[CurTok++];
+                return (Token)_bufToken[_curTok++];
             }
             else
             {
-                return (Token)BufToken[BufToken.Count - 1];
+                return (Token)_bufToken[_bufToken.Count - 1];
             }
 
         }
 
         public Token MatchToken()
         {
-            Token t = new Token();
+            var t = new Token();
 
             if (_Text.Length == 0)
             {
@@ -451,10 +445,8 @@ namespace Expresso
 
             if (t.Type == TokenType.Number)
                 t.Value = Convert.ToDouble(t.Lexeme, ni);
-            //Convert.ToDouble(
 
             ShiftIterators(ref i1, ref i2);
-
             return t;
         }
 
@@ -494,7 +486,7 @@ namespace Expresso
         {
             bool b = false;
             Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine("{0,30} {1,15} {2,5}", "Переменная", "Значение", "Обращений");
+            Console.WriteLine("{0,30} {1,15} {2,5}", "Variable", "Value", "Count");
             Console.WriteLine("\t\t\t----------------------------------------");
             Console.ForegroundColor = ConsoleColor.Black;
             foreach (DictionaryEntry o in VarTab)
@@ -535,12 +527,11 @@ namespace Expresso
             Token t = (Token)VarTab[Name];
             t.qc++;
             VarTab[Name] = t;
-            // ---------------- псевдо-функции ------------
+            // fucntions 
             if (t.Lexeme == "rnd")
-                t.Value = RandGen.RndObject.NextDouble();//RandGen.rndnormal();
+                t.Value = RandGen.RndObject.NextDouble();
             if (t.Lexeme == "rndnorm")
                 t.Value = RandGen.rndnormal();
-            // --------------------------------------------
             return t;
         }
 
@@ -574,12 +565,11 @@ namespace Expresso
 
         public string Trace()
         {
-            Stack s = (Stack)Code.Clone();
-            StringBuilder Result = new StringBuilder();
-            //Result.AppendLine(String.Format("{0}:", s.Count));
+            var s = (Stack)Code.Clone();
+            var Result = new StringBuilder();
             while (s.Count > 0)
             {
-                Token t = (Token)s.Pop();
+                var t = (Token)s.Pop();
                 Result.AppendFormat("{0}", t.Lexeme);
             }
 
@@ -589,9 +579,6 @@ namespace Expresso
 
     /*
      *TODO:
-     * 
-     *Написать дерево синтаксического разбора
-     * 
      * 
      */
 
@@ -606,7 +593,7 @@ namespace Expresso
         {
         }
 
-        public CodeProcessor(Array A)
+        public CodeProcessor(IEnumerable A)
         {
             foreach (object v in A)
                 Code.Add(v);
@@ -623,10 +610,10 @@ namespace Expresso
 
         public string Trace()
         {
-            StringBuilder Result = new StringBuilder();
+            var Result = new StringBuilder();
             foreach (object v in MainCode)
             {
-                Token t = (Token)v;
+                var t = (Token)v;
                 Result.AppendFormat("{0} ", t.Lexeme);
             }
             return Result.ToString();
@@ -650,7 +637,7 @@ namespace Expresso
                 t.Value = VarTab.Get(t.Lexeme).Value;
             return t;
         }
-        public int Size()
+        private int Size()
         {
             return Code.Count;
         }
@@ -658,17 +645,15 @@ namespace Expresso
         public double Eval()
         {
             MainCode = new ArrayList(Code);
-            //Console.WriteLine( Trace() );
             while (Size() > 1)
             {
                 int i = 0;
-                Token t2;
-                Token t1;
-                TokenType ttype;
                 while (true)
                 {
                     if (Size() == 1 || i >= Size())
                         break; ;
+                    Token t1;
+                    TokenType ttype;
                     switch (ttype = Get(i).Type)
                     {
                         case TokenType.AddOp:
@@ -681,7 +666,7 @@ namespace Expresso
                         case TokenType.AndOp:
                         case TokenType.AssignOp:
                         case TokenType.Colon:
-                            t2 = Get(i - 2);
+                            var t2 = Get(i - 2);
                             t1 = Get(i - 1);
 
                             switch (ttype)
@@ -756,12 +741,10 @@ namespace Expresso
 
         public SynAnalyzer()
         {
-
         }
 
         public SynAnalyzer(LexAnalyzer L, CodeProcessor C)
         {
-
             Lex = L;
             Code = C;
         }
@@ -912,7 +895,6 @@ namespace Expresso
         }
     }
 
-    //--------------------------------------------
     public class Node<Type>
     {
         private Type data;
@@ -1032,8 +1014,7 @@ namespace Expresso
         private VarTable VarTab;
         private CodeProcessor Code;
         private SynAnalyzer Syn;
-
-        public bool IsParsed = false;
+        private bool _isParsed = false;
 
         private string _Expression;
 
@@ -1055,20 +1036,19 @@ namespace Expresso
 
         public bool Parse()
         {
-            if (!IsParsed)
+            if (!_isParsed)
             {
                 Lex.Start();
                 Code.Clear();
-                IsParsed = Syn.Parse();
+                _isParsed = Syn.Parse();
             }
-            return IsParsed;
+            return _isParsed;
         }
 
         public double Result()
         {
             Parse();
-            //Console.WriteLine(IsParsed.ToString());
-            return IsParsed ? Code.Eval() : -1;
+            return _isParsed ? Code.Eval() : -1;
         }
 
         public string Expression
@@ -1081,7 +1061,7 @@ namespace Expresso
             {
                 if (_Expression != value)
                 {
-                    IsParsed = false;
+                    _isParsed = false;
                     _Expression = value;
                     Lex.Text = _Expression;
                 }
@@ -1157,7 +1137,6 @@ namespace Expresso
         private static ExprBuilder e = new ExprBuilder();
         static void Main(string[] args)
         {
-            //QueryPerfCounter myTimer = new QueryPerfCounter();
             myTimer.Start();
             myTimer.Stop();
             myTimer.Duration(1);
